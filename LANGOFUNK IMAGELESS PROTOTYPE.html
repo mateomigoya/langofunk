@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangoFunk - Final MVP Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .device-frame {
+            width: 375px;
+            height: 812px;
+            background: #000;
+            border-radius: 40px;
+            padding: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 32px;
+            overflow: hidden;
+            position: absolute;
+            display: none;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .header {
+            height: 56px;
+            min-height: 56px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            background: #fff;
+        }
+        
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: #fafafa;
+        }
+        
+        .content-white {
+            background: #fff;
+        }
+        
+        .bottom-nav {
+            height: 72px;
+            min-height: 72px;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 8px;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .nav-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .nav-item.active {
+            color: #000;
+        }
+        
+        .nav-item.inactive {
+            color: #999;
+        }
+        
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+            background: currentColor;
+            mask-size: contain;
+            mask-repeat: no-repeat;
+            mask-position: center;
+        }
+        
+        .nav-icon.home { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'%3E%3C/path%3E%3C/svg%3E"); }
+        .nav-icon.search { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cpath d='m21 21-4.35-4.35'%3E%3C/path%3E%3C/svg%3E"); }
+        .nav-icon.funk { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E"); }
+        .nav-icon.profile { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E"); }
+        
+        .nav-label {
+            font-size: 11px;
+        }
+        
+        /* Hamburger Menu */
+        .hamburger {
+            width: 24px;
+            height: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            position: relative;
+            z-index: 1001;
+        }
+        
+        .hamburger span {
+            width: 100%;
+            height: 2px;
+            background: #000;
+            border-radius: 1px;
+            transition: all 0.3s;
+        }
+        
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translateY(8px);
+        }
+        
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translateY(-8px);
+        }
+        
+        .side-menu {
+            position: absolute;
+            left: -280px;
+            top: 0;
+            width: 280px;
+            height: 100%;
+            background: #fff;
+            border-radius: 0 32px 32px 0;
+            z-index: 1000;
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .side-menu.active {
+            left: 0;
+        }
+        
+        .menu-header {
+            padding: 60px 20px 20px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .menu-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .menu-avatar {
+            width: 48px;
+            height: 48px;
+            background: #ddd;
+            border-radius: 24px;
+        }
+        
+        .menu-user-info {
+            flex: 1;
+        }
+        
+        .menu-user-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .menu-user-level {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .menu-items {
+            flex: 1;
+            padding: 20px 0;
+        }
+        
+        .menu-item {
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .menu-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .menu-arrow {
+            color: #999;
+            font-size: 18px;
+        }
+        
+        /* Tutorial Interactive Elements */
+        .tutorial-container {
+            padding: 20px;
+        }
+        
+        .tutorial-lyrics {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #000;
+            position: relative;
+        }
+        
+        .tutorial-line {
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+        
+        .word-example {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 0 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .word-example.blue {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .word-example.yellow {
+            background: #fff9c4;
+            color: #f57c00;
+        }
+        
+        .word-example.white {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .phrase-selected {
+            background: #fff9c4 !important;
+            color: #f57c00 !important;
+            border: 2px solid #f57c00;
+            padding: 0 4px;
+        }
+        
+        .phrase-saved {
+            background: #fff9c4;
+            border-radius: 6px;
+            padding: 4px 8px;
+            display: inline;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
+        
+        .phrase-saved .word-example {
+            background: transparent !important;
+            color: #f57c00 !important;
+            border: none !important;
+            padding: 0 2px !important;
+        }
+        
+        .arrow-label {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            animation: bounce 2s infinite;
+        }
+        
+        .arrow-label:after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #000;
+        }
+        
+        .drag-indicator {
+            position: absolute;
+            top: 8px;
+            left: 60px;
+            width: 100px;
+            height: 2px;
+            background: #f57c00;
+            animation: dragDemo 3s infinite;
+            opacity: 0.7;
+        }
+        
+        .drag-indicator:after {
+            content: '→';
+            position: absolute;
+            right: -20px;
+            top: -10px;
+            font-size: 20px;
+            color: #f57c00;
+        }
+        
+        @keyframes dragDemo {
+            0%, 100% { transform: translateX(0); opacity: 0; }
+            20% { opacity: 0.7; }
+            80% { transform: translateX(80px); opacity: 0.7; }
+            90% { opacity: 0; }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-5px); }
+        }
+        
+        /* Tier Chart Overlay */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            border-radius: 32px;
+        }
+        
+        .overlay.active {
+            display: flex;
+        }
+        
+        .overlay-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 320px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        
+        .overlay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            background: #f0f0f0;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        
+        .tier-item {
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .tier-item.current {
+            background: #f0f0f0;
+            border-color: #000;
+        }
+        
+        /* Logo Styles */
+        .spotify-logo {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #1DB954;
+            border-radius: 50%;
+            position: relative;
+            margin-right: 6px;
+        }
+        
+        .spotify-logo:before,
+        .spotify-logo:after {
+            content: '';
+            position: absolute;
+            background: #fff;
+            height: 2px;
+            border-radius: 1px;
+        }
+        
+        .spotify-logo:before {
+            width: 12px;
+            top: 7px;
+            left: 4px;
+            transform: rotate(-15deg);
+        }
+        
+        .spotify-logo:after {
+            width: 10px;
+            top: 11px;
+            left: 5px;
+            transform: rotate(-15deg);
+        }
+        
+        .youtube-logo {
+            display: inline-block;
+            width: 24px;
+            height: 16px;
+            background: #FF0000;
+            border-radius: 3px;
+            position: relative;
+            margin-right: 6px;
+        }
+        
+        .youtube-logo:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid #fff;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+        }
+        
+        /* Search Results */
+        .search-results {
+            margin-top: 16px;
+        }
+        
+        .result-item {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .result-item:hover {
+            background: #f9f9f9;
+        }
+        
+        /* Buttons */
+        .btn-primary {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .btn-secondary {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 14px 28px;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        
+        .btn-secondary:hover {
+            background: #f0f0f0;
+        }
+        
+        .youtube-btn {
+            background: #FF0000;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        /* Common Styles */
+        .speech-bubble {
+            background: #f0f0f0;
+            border-radius: 16px;
+            padding: 16px;
+            position: relative;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid #f0f0f0;
+        }
+        
+        .word-popup {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            width: 300px;
+        }
+        
+        .word-popup.active {
+            display: block;
+            animation: slideUp 0.2s ease;
+        }
+        
+        .phrase-popup {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            width: 320px;
+        }
+        
+        .phrase-popup.active {
+            display: block;
+            animation: slideUp 0.2s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(10px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        
+        /* Other common styles */
+        .song-item {
+            background: #fff;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .song-item:hover {
+            transform: translateX(2px);
+        }
+        
+        .album-art {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 8px;
+            margin-right: 12px;
+        }
+        
+        .action-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .search-btn {
+            width: 44px;
+            height: 44px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .country-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        
+        .country-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .country-tab {
+            padding: 8px 16px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        
+        .country-tab.active {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+        
+        .chart-list {
+            background: #fff;
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 16px;
+        }
+        
+        .chart-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .chart-item:hover {
+            background: #f9f9f9;
+        }
+        
+        .chart-item:last-child {
+            border-bottom: none;
+        }
+        
+        .chart-position {
+            width: 30px;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .chart-album {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 6px;
+            margin: 0 12px;
+        }
+        
+        .chart-info {
+            flex: 1;
+        }
+        
+        .chart-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .chart-artist {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <!-- Hamburger Menu -->
+        <div class="side-menu" id="side-menu">
+            <div class="menu-header">
+                <div class="menu-user">
+                    <div class="menu-avatar"></div>
+                    <div class="menu-user-info">
+                        <div class="menu-user-name">Mateo</div>
+                        <div class="menu-user-level">Level 12 · Intermediate</div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu-items">
+                <div class="menu-item">
+                    <span>Account</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item">
+                    <span>Notifications</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item">
+                    <span>Help & Documentation</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item">
+                    <span>LangoFunk Literature Review</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item">
+                    <span>Invite Friends</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item">
+                    <span>Content & Display</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tier Chart Overlay -->
+        <div class="overlay" id="tier-overlay">
+            <div class="overlay-content">
+                <div class="overlay-header">
+                    <h3>Progress Tiers</h3>
+                    <div class="close-btn" onclick="closeOverlay()">×</div>
+                </div>
+                <div class="tier-item">
+                    <div style="font-weight: 600;">Beginner (Levels 1-25)</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 4px;">750 words · 375 phrases</div>
+                </div>
+                <div class="tier-item current">
+                    <div style="font-weight: 600;">Intermediate (Levels 26-50)</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 4px;">1500 words · 750 phrases</div>
+                    <div style="font-size: 12px; color: #000; margin-top: 6px; font-weight: 500;">← You are here</div>
+                </div>
+                <div class="tier-item">
+                    <div style="font-weight: 600;">Advanced (Levels 51-75)</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 4px;">2250 words · 1125 phrases</div>
+                </div>
+                <div class="tier-item">
+                    <div style="font-weight: 600;">Funk Master (Levels 76-100)</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 4px;">3000 words · 1500 phrases</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Screen 1: Welcome -->
+        <div class="screen active" id="welcome-screen">
+            <div class="content content-white">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 30px;">
+                    <h1 style="font-size: 42px; font-weight: 800; margin-bottom: 30px; letter-spacing: -1px;">LangoFunk</h1>
+                    <div style="width: 100px; height: 100px; background: #000; border-radius: 24px; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; font-size: 60px;">🐵</div>
+                    <div style="font-size: 24px; font-weight: 600; margin-bottom: 40px; height: 32px;">
+                        Learn <span class="language-rotate" id="rotating-language">Spanish</span> through music
+                    </div>
+                    <button class="btn-primary" onclick="showScreen('academic-screen')">Get Started</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Screen 2: Academic Backing -->
+        <div class="screen" id="academic-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('welcome-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Why It Works</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content">
+                <h2 style="margin-bottom: 16px; font-size: 20px;">Science-Backed Learning</h2>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e0e0e0;">
+                    <div style="font-size: 11px; color: #666; margin-bottom: 6px;">MIT STUDY</div>
+                    <div style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">67%</div>
+                    <div style="font-size: 13px; color: #666;">Better retention with music vs traditional methods</div>
+                </div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e0e0e0;">
+                    <div style="font-size: 11px; color: #666; margin-bottom: 6px;">CAMBRIDGE RESEARCH</div>
+                    <div style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">2.5x</div>
+                    <div style="font-size: 13px; color: #666;">Faster vocabulary acquisition with melodic patterns</div>
+                </div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e0e0e0;">
+                    <div style="font-size: 11px; color: #666; margin-bottom: 6px;">NEUROSCIENCE REVIEW</div>
+                    <div style="font-size: 28px; font-weight: 700; margin-bottom: 6px;">89%</div>
+                    <div style="font-size: 13px; color: #666;">Improved pronunciation through song-based learning</div>
+                </div>
+                
+                <button class="btn-primary" onclick="showScreen('language-screen')" style="margin-top: 20px;">Continue</button>
+            </div>
+        </div>
+        
+        <!-- Screen 3: Language Selection -->
+        <div class="screen" id="language-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('academic-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Choose Your Language</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content">
+                <p style="margin-bottom: 16px;">Which language do you want to learn?</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px;">
+                    <div style="background: #f0f0f0; border: 2px solid #000; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer;">
+                        <div style="font-size: 32px; margin-bottom: 6px;">🇪🇸</div>
+                        <div style="font-weight: 600;">Spanish</div>
+                    </div>
+                    <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer;">
+                        <div style="font-size: 32px; margin-bottom: 6px;">🇫🇷</div>
+                        <div style="font-weight: 600;">French</div>
+                    </div>
+                    <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer;">
+                        <div style="font-size: 32px; margin-bottom: 6px;">🇩🇪</div>
+                        <div style="font-weight: 600;">German</div>
+                    </div>
+                    <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer;">
+                        <div style="font-size: 32px; margin-bottom: 6px;">🇮🇹</div>
+                        <div style="font-weight: 600;">Italian</div>
+                    </div>
+                    <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer;">
+                        <div style="font-size: 32px; margin-bottom: 6px;">🇷🇺</div>
+                        <div style="font-weight: 600;">Russian</div>
+                    </div>
+                    <div style="background: #fff; border: 2px solid #e0e0e0; border-radius: 12px; padding: 16px; text-align: center; cursor: pointer;">
+                        <div style="font-size: 32px; margin-bottom: 6px;">🇧🇷</div>
+                        <div style="font-weight: 600;">Portuguese</div>
+                    </div>
+                </div>
+                
+                <button class="btn-primary" onclick="showScreen('papa-intro-screen')">Continue with Spanish</button>
+            </div>
+        </div>
+        
+        <!-- Screen 4: Papa Funk Introduction -->
+        <div class="screen" id="papa-intro-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('language-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Meet Papa Funk</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content content-white">
+                <div style="text-align: center; padding: 30px 0;">
+                    <div style="font-size: 80px; margin-bottom: 16px;">🐵</div>
+                    <div class="speech-bubble">
+                        Yo! I'm Papa Funk. I speak every language. You can barely handle one. Let's fix that.
+                    </div>
+                    <p style="color: #666; margin-bottom: 24px; font-size: 14px;">Your personal AI language coach with attitude</p>
+                    <button class="btn-primary" onclick="showScreen('tutorial-screen')">Let's Start</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Enhanced Tutorial Screen -->
+        <div class="screen" id="tutorial-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('papa-intro-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">How It Works</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content">
+                <div style="font-size: 80px; text-align: center;">🐵</div>
+                
+                <div class="speech-bubble">
+                    Your mission: discover new words and phrases in songs. Then practice them with me until you actually know what you're saying.
+                </div>
+                
+                <div class="tutorial-lyrics">
+                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Try it! Tap the blue word:</div>
+                    <div class="tutorial-line">
+                        <span class="word-example blue" onclick="showTutorialPopup('Despacito', 'Slowly')">
+                            Despacito
+                            <span class="arrow-label">Tap me!</span>
+                        </span>
+                        <span class="word-example yellow" onclick="showTutorialPopup('quiero', 'I want', 'yellow')">quiero</span>
+                        <span class="word-example white" onclick="showTutorialPopup('bailar', 'to dance')">bailar</span>
+                        <span class="word-example white" onclick="showTutorialPopup('contigo', 'with you')">contigo</span>
+                    </div>
+                    <div style="font-size: 13px; color: #666; margin-top: 8px;">Slowly I want to dance with you</div>
+                    
+                    <div style="margin-top: 20px; font-size: 14px; font-weight: 600;">Select phrases by dragging:</div>
+                    <div class="tutorial-line" style="position: relative;" id="phrase-line">
+                        <span class="drag-indicator"></span>
+                        <span class="word-example blue phrase-word" id="phrase1" data-index="0" onclick="showTutorialPopup('Yo', 'I')">Yo</span>
+                        <span class="word-example blue phrase-word" id="phrase2" data-index="1" onclick="showTutorialPopup('no', 'not')">no</span>
+                        <span class="word-example blue phrase-word" id="phrase3" data-index="2" onclick="showTutorialPopup('soy', 'am')">soy</span>
+                        <span class="word-example yellow phrase-word" id="phrase4" data-index="3" onclick="showTutorialPopup('celoso', 'jealous')">celoso</span>
+                    </div>
+                    <div style="font-size: 12px; color: #888; margin-top: 8px; text-align: center;">↑ Drag across all words to select the phrase</div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 12px; background: #f0f0f0; border-radius: 8px; font-size: 13px;">
+                    <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 12px; height: 12px; background: #e3f2fd; border-radius: 2px; margin-right: 6px;"></span>Blue = New words to discover</div>
+                    <div style="margin-bottom: 8px;"><span style="display: inline-block; width: 12px; height: 12px; background: #fff9c4; border-radius: 2px; margin-right: 6px;"></span>Yellow = Still learning (tap to change status)</div>
+                    <div><span style="display: inline-block; width: 12px; height: 12px; background: #f0f0f0; border-radius: 2px; margin-right: 6px;"></span>Gray = You know these</div>
+                </div>
+                
+                <button class="btn-primary" onclick="showScreen('song-search-screen')" style="margin-top: 20px;">Choose Your First Song</button>
+            </div>
+        </div>
+        
+        <!-- Screen 5: Song Search -->
+        <div class="screen" id="song-search-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('tutorial-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Choose Your First Song</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content">
+                <p style="margin-bottom: 16px;">Search for any Spanish song to try free:</p>
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <input type="text" style="flex: 1; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 14px;" placeholder="Search artist or song..." value="Bad Bunny">
+                    <button style="width: 44px; height: 44px; background: #000; color: #fff; border: none; border-radius: 22px; cursor: pointer;">→</button>
+                </div>
+                
+                <div style="font-size: 13px; color: #666; margin-bottom: 12px;">Popular choices:</div>
+                
+                <div class="song-item" onclick="showScreen('demo-learn-screen')">
+                    <div class="album-art"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Yo No Soy Celoso</div>
+                        <div style="color: #666; font-size: 13px;">Bad Bunny</div>
+                    </div>
+                    <div style="width: 24px; height: 24px; background: #FF0000; border-radius: 4px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px;">▶</div>
+                </div>
+                
+                <div class="song-item" onclick="showScreen('demo-learn-screen')">
+                    <div class="album-art"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Moscow Mule</div>
+                        <div style="color: #666; font-size: 13px;">Bad Bunny</div>
+                    </div>
+                    <div style="width: 24px; height: 24px; background: #FF0000; border-radius: 4px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px;">▶</div>
+                </div>
+                
+                <div class="song-item" onclick="showScreen('demo-learn-screen')">
+                    <div class="album-art"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Tití Me Preguntó</div>
+                        <div style="color: #666; font-size: 13px;">Bad Bunny</div>
+                    </div>
+                    <div style="width: 24px; height: 24px; background: #FF0000; border-radius: 4px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px;">▶</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Screen 6: Demo Learn Session -->
+        <div class="screen" id="demo-learn-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('song-search-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Yo No Soy Celoso</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content">
+                <div style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 48px;">▶</div>
+                
+                <div style="background: #000; color: #fff; padding: 12px; border-radius: 12px; margin-bottom: 16px; font-size: 12px; position: relative;">
+                    💡 Tap any blue word to learn its meaning. Try to discover them all!
+                </div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e0e0e0; max-height: 400px; overflow-y: auto;">
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example blue" onclick="showWordPopup('Yo', 'I')">Yo</span>
+                            <span class="word-example blue" onclick="showWordPopup('no', 'not')">no</span>
+                            <span class="word-example blue" onclick="showWordPopup('soy', 'am')">soy</span>
+                            <span class="word-example blue" onclick="showWordPopup('celoso', 'jealous')">celoso</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">I'm not jealous</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example blue" onclick="showWordPopup('Pero', 'But')">Pero</span>
+                            <span class="word-example blue" onclick="showWordPopup('cuida\'o', 'be careful')">cuida'o</span>
+                            <span class="word-example white" onclick="showWordPopup('si', 'if')">si</span>
+                            <span class="word-example blue" onclick="showWordPopup('me', 'me')">me</span>
+                            <span class="word-example blue" onclick="showWordPopup('entero', 'I find out')">entero</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">But be careful if I find out</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Que', 'That')">Que</span>
+                            <span class="word-example blue" onclick="showWordPopup('andas', 'you walk')">andas</span>
+                            <span class="word-example white" onclick="showWordPopup('con', 'with')">con</span>
+                            <span class="word-example blue" onclick="showWordPopup('otro', 'another')">otro</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">That you're with someone else</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example blue" onclick="showWordPopup('Te', 'You')">Te</span>
+                            <span class="word-example yellow" onclick="showWordPopup('va', 'goes/will')">va</span>
+                            <span class="word-example blue" onclick="showWordPopup('doler', 'to hurt')">doler</span>
+                            <span class="word-example white" onclick="showWordPopup('cuando', 'when')">cuando</span>
+                            <span class="word-example blue" onclick="showWordPopup('recuerdes', 'you remember')">recuerdes</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">It's going to hurt when you remember</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Todo', 'Everything')">Todo</span>
+                            <span class="word-example white" onclick="showWordPopup('lo', 'it/the')">lo</span>
+                            <span class="word-example white" onclick="showWordPopup('que', 'that')">que</span>
+                            <span class="word-example blue" onclick="showWordPopup('hicimo\'', 'we did')">hicimo'</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">Everything we did</div>
+                    </div>
+                </div>
+                
+                <button class="btn-primary" onclick="showScreen('song-complete-screen')" style="margin-top: 16px;">Complete Song</button>
+            </div>
+        </div>
+        
+        <!-- Learned Song Screen (for already completed songs - no blue words) -->
+        <div class="screen" id="learned-song-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('home-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Yo No Soy Celoso</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content">
+                <div style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 48px;">▶</div>
+                
+                <div style="background: #11998e; color: #fff; padding: 12px; border-radius: 12px; margin-bottom: 16px; font-size: 12px; position: relative;">
+                    ✓ You've completed this song! Tap any word to review its meaning.
+                </div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e0e0e0; max-height: 400px; overflow-y: auto;">
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Yo', 'I')">Yo</span>
+                            <span class="word-example white" onclick="showWordPopup('no', 'not')">no</span>
+                            <span class="word-example white" onclick="showWordPopup('soy', 'am')">soy</span>
+                            <span class="word-example yellow" onclick="showWordPopup('celoso', 'jealous')">celoso</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">I'm not jealous</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Pero', 'But')">Pero</span>
+                            <span class="word-example yellow" onclick="showWordPopup('cuida\'o', 'be careful')">cuida'o</span>
+                            <span class="word-example white" onclick="showWordPopup('si', 'if')">si</span>
+                            <span class="word-example white" onclick="showWordPopup('me', 'me')">me</span>
+                            <span class="word-example white" onclick="showWordPopup('entero', 'I find out')">entero</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">But be careful if I find out</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Que', 'That')">Que</span>
+                            <span class="word-example white" onclick="showWordPopup('andas', 'you walk')">andas</span>
+                            <span class="word-example white" onclick="showWordPopup('con', 'with')">con</span>
+                            <span class="word-example yellow" onclick="showWordPopup('otro', 'another')">otro</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">That you're with someone else</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Te', 'You')">Te</span>
+                            <span class="word-example white" onclick="showWordPopup('va', 'goes/will')">va</span>
+                            <span class="word-example white" onclick="showWordPopup('doler', 'to hurt')">doler</span>
+                            <span class="word-example white" onclick="showWordPopup('cuando', 'when')">cuando</span>
+                            <span class="word-example yellow" onclick="showWordPopup('recuerdes', 'you remember')">recuerdes</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">It's going to hurt when you remember</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Todo', 'Everything')">Todo</span>
+                            <span class="word-example white" onclick="showWordPopup('lo', 'it/the')">lo</span>
+                            <span class="word-example white" onclick="showWordPopup('que', 'that')">que</span>
+                            <span class="word-example white" onclick="showWordPopup('hicimo\'', 'we did')">hicimo'</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">Everything we did</div>
+                    </div>
+                </div>
+                
+                <button class="btn-secondary" onclick="showScreen('home-screen')" style="margin-top: 16px;">Back to Home</button>
+            </div>
+        </div>
+        
+        <!-- NEW: Song Complete Screen -->
+        <div class="screen" id="song-complete-screen">
+            <div class="content content-white">
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 80px; margin-bottom: 20px;">🐵</div>
+                    <h2 style="font-size: 28px; margin-bottom: 16px;">Nice Work!</h2>
+                    
+                    <div style="display: flex; justify-content: space-around; margin: 30px 0;">
+                        <div>
+                            <div style="font-size: 32px; font-weight: 700;">15</div>
+                            <div style="font-size: 12px; color: #666;">WORDS</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 32px; font-weight: 700;">3</div>
+                            <div style="font-size: 12px; color: #666;">PHRASES</div>
+                        </div>
+                    </div>
+                    
+                    <div class="speech-bubble">
+                        Not bad for a beginner. Now let's practice those phrases so you don't forget them tomorrow.
+                    </div>
+                    
+                    <button class="btn-primary" onclick="showScreen('goal-setting-screen')">Set Your Goal</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Screen 7: Goal Setting -->
+        <div class="screen" id="goal-setting-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('song-complete-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Set Your Goal</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content">
+                <div style="font-size: 80px; text-align: center;">🐵</div>
+                
+                <p style="margin-bottom: 16px;">What's your Spanish music goal?</p>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                    <input type="text" style="width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;" placeholder="Type your goal...">
+                    <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                        Examples:<br>
+                        • Learn 20 songs from Un Verano Sin Ti by end of summer<br>
+                        • Discover 30 new reggaeton artists by March<br>
+                        • Master 500 words through bachata music
+                    </div>
+                </div>
+                
+                <div class="speech-bubble">
+                    Specific goals get results. Make it measurable and I'll make sure you hit it.
+                </div>
+                
+                <button class="btn-primary" onclick="alert('Superwall paywall would appear here')">Unlock Full Access</button>
+                <button style="background: none; border: none; color: #666; font-size: 14px; cursor: pointer; padding: 8px;" onclick="showScreen('home-screen')">Skip to Demo</button>
+            </div>
+        </div>
+        
+        <!-- Rest of screens continue... -->
+        <!-- Home Screen (fixed) -->
+        <div class="screen" id="home-screen">
+            <div class="header">
+                <div class="hamburger" onclick="toggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div style="font-weight: 600;">LangoFunk</div>
+                <div style="width: 24px;"></div>
+            </div>
+            <div class="content">
+                <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-size: 14px;">
+                    <div style="font-size: 11px; opacity: 0.9; margin-bottom: 4px;">MY GOAL</div>
+                    <div style="font-weight: 600;">Learn 20 songs from Un Verano Sin Ti by Aug 31</div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <h2 style="font-size: 18px; margin-bottom: 6px;">¡Hola, Mateo!</h2>
+                    <p style="color: #666; font-size: 14px;">Ready to funk up your Spanish?</p>
+                </div>
+                
+                <div class="action-card" onclick="showScreen('spotify-connect-screen')">
+                    <div style="width: 40px; height: 40px; background: #1DB954; border-radius: 10px; margin: 0 auto 10px;"></div>
+                    <div style="font-weight: 600; font-size: 16px;">Import from Spotify</div>
+                </div>
+                
+                <div style="font-size: 12px; font-weight: 600; margin: 20px 0 10px; text-transform: uppercase; color: #666;">Continue Learning</div>
+                
+                <div class="song-item" onclick="showScreen('learn-screen')">
+                    <div class="album-art"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Moscow Mule</div>
+                        <div style="color: #666; font-size: 13px;">Bad Bunny</div>
+                    </div>
+                </div>
+                
+                <div style="font-size: 12px; font-weight: 600; margin: 20px 0 10px; text-transform: uppercase; color: #666;">Learned Songs</div>
+                
+                <div class="song-item" onclick="showScreen('learned-song-screen')">
+                    <div class="album-art" style="background: linear-gradient(135deg, #11998e, #38ef7d);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Yo No Soy Celoso</div>
+                        <div style="color: #666; font-size: 13px;">Bad Bunny</div>
+                    </div>
+                    <div style="font-size: 11px; color: #11998e; font-weight: 600;">✓ Complete</div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <div class="nav-item active">
+                    <div class="nav-icon home"></div>
+                    <div class="nav-label">Home</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('search-tab-screen')">
+                    <div class="nav-icon search"></div>
+                    <div class="nav-label">Search</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('funk-screen')">
+                    <div class="nav-icon funk"></div>
+                    <div class="nav-label">Papa Funk</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('profile-screen')">
+                    <div class="nav-icon profile"></div>
+                    <div class="nav-label">Profile</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Enhanced Search Tab -->
+        <div class="screen" id="search-tab-screen">
+            <div class="header">
+                <div class="hamburger" onclick="toggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div style="font-weight: 600;">Discover</div>
+                <div style="width: 24px;"></div>
+            </div>
+            <div class="content" style="padding: 0;">
+                <div style="padding: 16px; padding-bottom: 0;">
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="Search songs or artists..." onkeyup="searchSongs(this.value)">
+                        <button class="search-btn">→</button>
+                    </div>
+                </div>
+                
+                <div class="country-tabs">
+                    <div class="country-tab active">🇪🇸 Spain</div>
+                    <div class="country-tab">🇲🇽 Mexico</div>
+                    <div class="country-tab">🇦🇷 Argentina</div>
+                    <div class="country-tab">🇨🇴 Colombia</div>
+                    <div class="country-tab">🇵🇷 Puerto Rico</div>
+                </div>
+                
+                <div style="padding: 16px;">
+                    <div id="search-results" class="search-results" style="display: none;">
+                        <h3 style="margin-bottom: 12px; font-size: 16px;">Search Results</h3>
+                        <div class="result-item">
+                            <span class="spotify-logo"></span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 14px;">Despacito</div>
+                                <div style="font-size: 12px; color: #666;">Luis Fonsi</div>
+                            </div>
+                        </div>
+                        <div class="result-item">
+                            <span class="youtube-logo"></span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 14px;">Despacito (Official Video)</div>
+                                <div style="font-size: 12px; color: #666;">Luis Fonsi ft. Daddy Yankee</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="charts-content">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="font-size: 16px; margin: 0;">Spotify Top 50 - Spain</h3>
+                            <span style="font-size: 13px; color: #666; cursor: pointer;" onclick="alert('Full chart coming soon!')">See all →</span>
+                        </div>
+                        <div class="chart-list">
+                            <div class="chart-item">
+                                <div class="chart-position">1</div>
+                                <div class="chart-album"></div>
+                                <div class="chart-info">
+                                    <div class="chart-title">LALA</div>
+                                    <div class="chart-artist">Myke Towers</div>
+                                </div>
+                            </div>
+                            <div class="chart-item">
+                                <div class="chart-position">2</div>
+                                <div class="chart-album" style="background: linear-gradient(135deg, #FF6B6B, #FFE66D);"></div>
+                                <div class="chart-info">
+                                    <div class="chart-title">TQG</div>
+                                    <div class="chart-artist">KAROL G, Shakira</div>
+                                </div>
+                            </div>
+                            <div class="chart-item">
+                                <div class="chart-position">3</div>
+                                <div class="chart-album" style="background: linear-gradient(135deg, #4ECDC4, #44A08D);"></div>
+                                <div class="chart-info">
+                                    <div class="chart-title">Flowers</div>
+                                    <div class="chart-artist">Miley Cyrus</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="youtube-btn" style="margin-top: 16px;">
+                            <span class="youtube-logo" style="margin: 0;"></span>
+                            Most viewed YouTube music videos by Spanish-speaking artists
+                        </button>
+                        <button class="youtube-btn">
+                            <span class="youtube-logo" style="margin: 0;"></span>
+                            Most viewed YouTube music videos by Mexican artists
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <div class="nav-item inactive" onclick="showScreen('home-screen')">
+                    <div class="nav-icon home"></div>
+                    <div class="nav-label">Home</div>
+                </div>
+                <div class="nav-item active">
+                    <div class="nav-icon search"></div>
+                    <div class="nav-label">Search</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('funk-screen')">
+                    <div class="nav-icon funk"></div>
+                    <div class="nav-label">Papa Funk</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('profile-screen')">
+                    <div class="nav-icon profile"></div>
+                    <div class="nav-label">Profile</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Learn Screen -->
+        <div class="screen" id="learn-screen">
+            <div class="header">
+                <div class="hamburger" onclick="toggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div style="font-weight: 600;">Moscow Mule</div>
+                <div style="width: 24px;"></div>
+            </div>
+            <div class="content">
+                <div style="width: 100%; height: 180px; background: #000; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 48px;">▶</div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; border: 1px solid #e0e0e0; max-height: 400px; overflow-y: auto;">
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Después', 'After')">Después</span>
+                            <span class="word-example white" onclick="showWordPopup('de', 'of')">de</span>
+                            <span class="word-example white" onclick="showWordPopup('la', 'the')">la</span>
+                            <span class="word-example blue" onclick="showWordPopup('playa', 'beach')">playa</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">After the beach</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example yellow" onclick="showWordPopup('Abajo', 'Down', 'yellow')">Abajo</span>
+                            <span class="word-example white" onclick="showWordPopup('en', 'in/at')">en</span>
+                            <span class="word-example white" onclick="showWordPopup('la', 'the')">la</span>
+                            <span class="word-example blue" onclick="showWordPopup('parcela', 'plot/land')">parcela</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">Down at the plot</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example blue" onclick="showWordPopup('Viste', 'You saw')">Viste</span>
+                            <span class="word-example white" onclick="showWordPopup('mi', 'my')">mi</span>
+                            <span class="word-example blue" onclick="showWordPopup('vida', 'life')">vida</span>
+                            <span class="word-example yellow" onclick="showWordPopup('entera', 'whole', 'yellow')">entera</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">You saw my whole life</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 17px; font-weight: 500; margin-bottom: 6px; color: #000; line-height: 1.4;">
+                            <span class="word-example white" onclick="showWordPopup('Y', 'And')">Y</span>
+                            <span class="word-example blue" onclick="showWordPopup('aprendiste', 'you learned')">aprendiste</span>
+                            <span class="word-example white" onclick="showWordPopup('a', 'to')">a</span>
+                            <span class="word-example blue" onclick="showWordPopup('quererme', 'to love me')">quererme</span>
+                        </div>
+                        <div style="font-size: 13px; color: #666;">And you learned to love me</div>
+                    </div>
+                </div>
+                
+                <button class="btn-primary" onclick="showScreen('learn-complete-screen')" style="margin-top: 16px;">Complete Song</button>
+            </div>
+            <div class="bottom-nav">
+                <div class="nav-item inactive" onclick="showScreen('home-screen')">
+                    <div class="nav-icon home"></div>
+                    <div class="nav-label">Home</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('search-tab-screen')">
+                    <div class="nav-icon search"></div>
+                    <div class="nav-label">Search</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('funk-screen')">
+                    <div class="nav-icon funk"></div>
+                    <div class="nav-label">Papa Funk</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('profile-screen')">
+                    <div class="nav-icon profile"></div>
+                    <div class="nav-label">Profile</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Learn Complete Screen -->
+        <div class="screen" id="learn-complete-screen">
+            <div class="header">
+                <div style="width: 32px;"></div>
+                <div style="font-weight: 600;">Session Complete</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content content-white">
+                <div style="text-align: center; padding: 30px 0;">
+                    <div style="font-size: 60px; margin-bottom: 20px;">🐵</div>
+                    
+                    <h2 style="font-size: 24px; margin-bottom: 20px;">Great Progress!</h2>
+                    
+                    <div style="display: flex; justify-content: space-around; margin: 30px 0;">
+                        <div>
+                            <div style="font-size: 28px; font-weight: 700;">120</div>
+                            <div style="font-size: 11px; color: #666;">XP EARNED</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 28px; font-weight: 700;">12</div>
+                            <div style="font-size: 11px; color: #666;">WORDS</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 28px; font-weight: 700;">5</div>
+                            <div style="font-size: 11px; color: #666;">PHRASES</div>
+                        </div>
+                    </div>
+                    
+                    <div class="speech-bubble">
+                        12 words closer to actually understanding Bad Bunny. Time to practice those phrases with me.
+                    </div>
+                    
+                    <button class="btn-primary" onclick="showScreen('funk-screen')">Practice with Papa Funk</button>
+                    <button class="btn-secondary" onclick="showScreen('home-screen')" style="margin-top: 10px;">Back to Home</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Papa Funk Chat Screen -->
+        <div class="screen" id="funk-screen">
+            <div class="header">
+                <div class="hamburger" onclick="toggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div style="font-weight: 600;">Papa Funk</div>
+                <div style="width: 24px;"></div>
+            </div>
+            <div class="content">
+                <div style="text-align: center; padding: 16px; background: #fff; border-radius: 12px; margin-bottom: 12px;">
+                    <div style="font-size: 60px; margin-bottom: 8px;">🐵</div>
+                    <div style="font-size: 13px; background: #f0f0f0; padding: 10px; border-radius: 10px;">Ready to practice? Let's work on your phrases.</div>
+                </div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                    <div style="font-weight: 600; margin-bottom: 12px; font-size: 14px;">Practice These Phrases:</div>
+                    <div style="background: #fff9c4; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; border: 1px solid #f57c00;">
+                        "Después de la playa"
+                        <div style="font-size: 11px; color: #666; margin-top: 4px;">Discovered 3 days ago</div>
+                    </div>
+                    <div style="background: #fff9c4; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; border: 1px solid #f57c00;">
+                        "Mi vida entera"
+                        <div style="font-size: 11px; color: #666; margin-top: 4px;">Discovered 3 days ago</div>
+                    </div>
+                    <div style="background: #fff9c4; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; border: 1px solid #f57c00;">
+                        "No soy celoso"
+                        <div style="font-size: 11px; color: #666; margin-top: 4px;">Discovered 5 days ago</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;">
+                    <div style="background: #fff; border: 1px solid #000; padding: 6px 12px; border-radius: 18px; font-size: 13px; cursor: pointer;">Practice phrases</div>
+                    <div style="background: #fff; border: 1px solid #000; padding: 6px 12px; border-radius: 18px; font-size: 13px; cursor: pointer;">Song recommendations</div>
+                    <div style="background: #fff; border: 1px solid #000; padding: 6px 12px; border-radius: 18px; font-size: 13px; cursor: pointer;">Free chat</div>
+                </div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 12px; height: 200px; overflow-y: auto; margin-bottom: 12px; border: 1px solid #e0e0e0;">
+                    <div style="margin-bottom: 10px;">
+                        <div style="display: inline-block; background: #f0f0f0; padding: 8px 12px; border-radius: 12px 12px 12px 2px; font-size: 13px;">
+                            Let's practice "después de la playa". Use it in a sentence.
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px; text-align: right;">
+                        <div style="display: inline-block; background: #000; color: #fff; padding: 8px 12px; border-radius: 12px 12px 2px 12px; font-size: 13px;">
+                            Después de la playa, vamos a comer tacos
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <div style="display: inline-block; background: #f0f0f0; padding: 8px 12px; border-radius: 12px 12px 12px 2px; font-size: 13px;">
+                            Perfect! You got it. "After the beach, we're going to eat tacos." Your Spanish is getting smoother.
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" style="flex: 1; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 13px;" placeholder="Type your message...">
+                    <button style="width: 40px; height: 40px; background: #000; color: #fff; border: none; border-radius: 20px; cursor: pointer;">→</button>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <div class="nav-item inactive" onclick="showScreen('home-screen')">
+                    <div class="nav-icon home"></div>
+                    <div class="nav-label">Home</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('search-tab-screen')">
+                    <div class="nav-icon search"></div>
+                    <div class="nav-label">Search</div>
+                </div>
+                <div class="nav-item active">
+                    <div class="nav-icon funk"></div>
+                    <div class="nav-label">Papa Funk</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('profile-screen')">
+                    <div class="nav-icon profile"></div>
+                    <div class="nav-label">Profile</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Screen (Enhanced) -->
+        <div class="screen" id="profile-screen">
+            <div class="header">
+                <div class="hamburger" onclick="toggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div style="font-weight: 600;">Profile</div>
+                <div style="width: 24px;"></div>
+            </div>
+            <div class="content">
+                <div style="text-align: center; padding: 16px; background: #fff; border-radius: 12px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                    <div style="width: 60px; height: 60px; background: #f0f0f0; border-radius: 30px; margin: 0 auto 10px;"></div>
+                    <div style="font-size: 16px; font-weight: 600;">Level 12</div>
+                    <div style="font-size: 13px; color: #666; margin-bottom: 10px;">Intermediate</div>
+                    <div style="font-size: 12px; color: #999; padding: 6px 12px; background: #f0f0f0; border-radius: 16px; display: inline-block;">
+                        Goal: Learn 20 songs from Un Verano Sin Ti by Aug 31
+                    </div>
+                </div>
+                
+                <!-- Streak Calendar -->
+                <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 14px;">Streak Calendar</div>
+                        <div style="font-size: 12px; color: #666; cursor: pointer;" onclick="alert('Full calendar coming soon!')">See full calendar →</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; gap: 4px;">
+                        <div style="flex: 1; text-align: center;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Mon</div>
+                            <div style="width: 36px; height: 36px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">🔥</div>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Tue</div>
+                            <div style="width: 36px; height: 36px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">🔥</div>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Wed</div>
+                            <div style="width: 36px; height: 36px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">🔥</div>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Thu</div>
+                            <div style="width: 36px; height: 36px; background: #e8e8e8; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 14px; color: #ccc;">—</div>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Fri</div>
+                            <div style="width: 36px; height: 36px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">🔥</div>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Sat</div>
+                            <div style="width: 36px; height: 36px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">🔥</div>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">Sun</div>
+                            <div style="width: 36px; height: 36px; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">🔥</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                            <span>Progress to Level 13</span>
+                            <span>120 / 150 XP</span>
+                        </div>
+                        <div style="height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                            <div style="height: 100%; background: #000; width: 80%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
+                    <div style="background: #fff; padding: 14px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0;">
+                        <div style="font-size: 20px; margin-bottom: 4px;">🔥</div>
+                        <div style="font-size: 20px; font-weight: 600;">3</div>
+                        <div style="font-size: 10px; color: #666;">STREAK</div>
+                    </div>
+                    <div style="background: #fff; padding: 14px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0;">
+                        <div style="font-size: 20px; margin-bottom: 4px;">🧠</div>
+                        <div style="font-size: 20px; font-weight: 600;">847</div>
+                        <div style="font-size: 9px; color: #666;">WORDS KNOWN</div>
+                    </div>
+                    <div style="background: #fff; padding: 14px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0;">
+                        <div style="font-size: 20px; margin-bottom: 4px;">💬</div>
+                        <div style="font-size: 20px; font-weight: 600;">423</div>
+                        <div style="font-size: 9px; color: #666;">PHRASES KNOWN</div>
+                    </div>
+                </div>
+                
+                <!-- Currently Learning Section -->
+                <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 12px;">Currently Learning</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">📖</span>
+                            <span style="font-size: 14px;"><strong>12</strong> Words</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; cursor: pointer;" onclick="alert('Words being learned list coming soon!')">See words →</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">💭</span>
+                            <span style="font-size: 14px;"><strong>5</strong> Phrases</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; cursor: pointer;" onclick="alert('Phrases being learned list coming soon!')">See phrases →</div>
+                    </div>
+                </div>
+                
+                <div style="background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #e0e0e0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div style="font-weight: 600; font-size: 16px;">Progress Map</div>
+                        <div style="font-size: 12px; color: #666; cursor: pointer;" onclick="showTierChart()">View Progress Chart →</div>
+                    </div>
+                    <div style="position: relative; height: 120px; margin: 20px 0;">
+                        <div style="position: absolute; top: 50%; left: 0; right: 0; height: 8px; background: #e0e0e0; border-radius: 4px; transform: translateY(-50%);">
+                            <div style="position: absolute; top: 0; left: 0; height: 100%; width: 45%; background: #000; border-radius: 4px;"></div>
+                        </div>
+                        <div style="position: absolute; top: 50%; left: 0%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #000; color: #fff; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px;">🌱</div>
+                        <div style="position: absolute; top: 50%; left: 45%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #fff; border: 3px solid #000; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px;">🎯</div>
+                        <div style="position: absolute; top: 50%; left: 100%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #fff; border: 3px solid #e0e0e0; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 14px;">🚀</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <div class="nav-item inactive" onclick="showScreen('home-screen')">
+                    <div class="nav-icon home"></div>
+                    <div class="nav-label">Home</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('search-tab-screen')">
+                    <div class="nav-icon search"></div>
+                    <div class="nav-label">Search</div>
+                </div>
+                <div class="nav-item inactive" onclick="showScreen('funk-screen')">
+                    <div class="nav-icon funk"></div>
+                    <div class="nav-label">Papa Funk</div>
+                </div>
+                <div class="nav-item active">
+                    <div class="nav-icon profile"></div>
+                    <div class="nav-label">Profile</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Spotify Connect Screen -->
+        <div class="screen" id="spotify-connect-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('home-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Connect Spotify</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content content-white">
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="width: 80px; height: 80px; background: #1DB954; border-radius: 20px; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center; font-size: 40px;">
+                        🎵
+                    </div>
+                    <h2 style="margin-bottom: 10px;">Connect Your Music</h2>
+                    <p style="color: #666; margin-bottom: 30px;">Import your playlists and start learning with songs you already love</p>
+                    
+                    <button class="btn-primary" style="background: #1DB954;" onclick="showScreen('spotify-playlists-screen')">Connect Spotify</button>
+                    <button style="background: none; border: none; color: #666; font-size: 14px; cursor: pointer; padding: 8px; margin-top: 10px;" onclick="showScreen('home-screen')">Skip for now</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Spotify Playlists Screen -->
+        <div class="screen" id="spotify-playlists-screen">
+            <div class="header">
+                <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="showScreen('spotify-connect-screen')">
+                    <div style="width: 18px; height: 18px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); margin-left: 4px;"></div>
+                </div>
+                <div style="font-weight: 600;">Select Playlists</div>
+                <div style="width: 32px;"></div>
+            </div>
+            <div class="content">
+                <p style="margin-bottom: 16px;">Choose playlists to import:</p>
+                
+                <div class="song-item" onclick="alert('Importing playlist...')">
+                    <div class="album-art" style="background: linear-gradient(135deg, #FF6B6B, #FFE66D);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Un Verano Sin Ti</div>
+                        <div style="color: #666; font-size: 13px;">23 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art" style="background: linear-gradient(135deg, #4ECDC4, #44A08D);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Reggaeton Hits</div>
+                        <div style="color: #666; font-size: 13px;">47 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Spanish Vibes</div>
+                        <div style="color: #666; font-size: 13px;">31 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art" style="background: linear-gradient(135deg, #f093fb, #f5576c);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Summer 2024</div>
+                        <div style="color: #666; font-size: 13px;">82 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art" style="background: linear-gradient(135deg, #fa709a, #fee140);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Workout Mix</div>
+                        <div style="color: #666; font-size: 13px;">54 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art" style="background: linear-gradient(135deg, #30cfd0, #330867);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Chill Latino</div>
+                        <div style="color: #666; font-size: 13px;">28 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art" style="background: linear-gradient(135deg, #a8edea, #fed6e3);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Party Mix</div>
+                        <div style="color: #666; font-size: 13px;">65 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art" style="background: linear-gradient(135deg, #ff9a9e, #fecfef);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Road Trip</div>
+                        <div style="color: #666; font-size: 13px;">43 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Discover Weekly</div>
+                        <div style="color: #666; font-size: 13px;">30 songs</div>
+                    </div>
+                </div>
+                
+                <div class="song-item">
+                    <div class="album-art" style="background: linear-gradient(135deg, #d299c2, #fef9d7);"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 15px;">Liked Songs</div>
+                        <div style="color: #666; font-size: 13px;">127 songs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Other screens like Papa Funk, Learn, etc. remain the same -->
+        
+    </div>
+    
+    <!-- Word Popup -->
+    <div class="word-popup" id="word-popup">
+        <div style="position: relative;">
+            <div style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: #f0f0f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: #666;" onclick="closeWordPopup()">×</div>
+        </div>
+        <div style="font-size: 20px; font-weight: 700; margin-bottom: 6px;" id="popup-word">celoso</div>
+        <div style="font-size: 16px; color: #666; margin-bottom: 14px;" id="popup-translation">jealous</div>
+        <div style="display: flex; gap: 8px;">
+            <button id="popup-known-btn" style="flex: 1; padding: 8px; border-radius: 18px; background: #000; color: #fff; border: none; font-weight: 600; cursor: pointer;" onclick="markWordKnown()">Got it!</button>
+            <button style="flex: 1; padding: 8px; border-radius: 18px; background: #fff; border: 1px solid #e0e0e0; font-weight: 600; cursor: pointer;" onclick="markWordLearning()">Still learning</button>
+        </div>
+    </div>
+    
+    <!-- Phrase Popup -->
+    <div class="phrase-popup" id="phrase-popup">
+        <div style="position: relative;">
+            <div style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: #f0f0f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: #666;" onclick="dismissPhrasePopup()">×</div>
+        </div>
+        <div style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">Yo no soy celoso</div>
+        <div style="font-size: 15px; color: #666; margin-bottom: 14px;">I'm not jealous</div>
+        <button class="btn-primary" style="padding: 12px;" onclick="practicePhrase()">Practice with Papa Funk</button>
+        <button class="btn-secondary" style="margin-top: 8px; padding: 10px;" onclick="savePhraseLater()">Save for later</button>
+    </div>
+    
+    <script>
+        // Screen navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            document.getElementById(screenId).classList.add('active');
+            
+            // Update nav for main screens
+            const mainScreens = ['home-screen', 'search-tab-screen', 'funk-screen', 'profile-screen'];
+            if (mainScreens.includes(screenId)) {
+                updateNav(screenId);
+            }
+            
+            // Close menu if open
+            document.getElementById('side-menu').classList.remove('active');
+            document.querySelector('.hamburger').classList.remove('active');
+        }
+        
+        function updateNav(screenId) {
+            const navMap = {
+                'home-screen': 0,
+                'search-tab-screen': 1,
+                'funk-screen': 2,
+                'profile-screen': 3
+            };
+            
+            document.querySelectorAll('.nav-item').forEach((item, index) => {
+                if (index === navMap[screenId]) {
+                    item.classList.add('active');
+                    item.classList.remove('inactive');
+                } else {
+                    item.classList.remove('active');
+                    item.classList.add('inactive');
+                }
+            });
+        }
+        
+        // Hamburger menu toggle
+        function toggleMenu() {
+            const menu = document.getElementById('side-menu');
+            const hamburger = document.querySelector('.hamburger');
+            menu.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        }
+        
+        // Track the currently clicked word element
+        let currentWordElement = null;
+        let popupTimeout = null;
+        
+        // Tutorial popup (now uses same logic as word popup)
+        function showTutorialPopup(word, translation, type = 'blue') {
+            // Find the clicked element
+            const clickedElement = event ? event.target : null;
+            showWordPopupWithElement(word, translation, clickedElement);
+        }
+        
+        // Show phrase demo
+        function showPhraseDemo() {
+            document.getElementById('phrase1').classList.add('phrase-selected');
+            document.getElementById('phrase2').classList.add('phrase-selected');
+            document.getElementById('phrase3').classList.add('phrase-selected');
+            document.getElementById('phrase4').classList.add('phrase-selected');
+            
+            setTimeout(() => {
+                document.getElementById('phrase-popup').classList.add('active');
+            }, 500);
+        }
+        
+        function practicePhrase() {
+            document.getElementById('phrase-popup').classList.remove('active');
+            clearPhraseSelection();
+            alert('Would navigate to Papa Funk chat with this phrase');
+        }
+        
+        // Dismiss phrase popup without changing anything
+        function dismissPhrasePopup() {
+            document.getElementById('phrase-popup').classList.remove('active');
+            clearPhraseSelection();
+        }
+        
+        // Save phrase for later - turns entire phrase yellow
+        function savePhraseLater() {
+            document.getElementById('phrase-popup').classList.remove('active');
+            
+            // Add phrase-saved class to the phrase line container
+            const phraseLine = document.getElementById('phrase-line');
+            if (phraseLine) {
+                phraseLine.classList.add('phrase-saved');
+            }
+            
+            clearPhraseSelection();
+        }
+        
+        function closePhrasePopup() {
+            document.getElementById('phrase-popup').classList.remove('active');
+            document.querySelectorAll('.phrase-selected').forEach(el => {
+                el.classList.remove('phrase-selected');
+            });
+        }
+        
+        // Search functionality
+        function searchSongs(query) {
+            const results = document.getElementById('search-results');
+            const charts = document.getElementById('charts-content');
+            
+            if (query.length > 0) {
+                results.style.display = 'block';
+                charts.style.display = 'none';
+            } else {
+                results.style.display = 'none';
+                charts.style.display = 'block';
+            }
+        }
+        
+        // Tier chart overlay
+        function showTierChart() {
+            document.getElementById('tier-overlay').classList.add('active');
+        }
+        
+        function closeOverlay() {
+            document.getElementById('tier-overlay').classList.remove('active');
+        }
+        
+        // Word popup functions
+        function showWordPopup(word, translation, type = 'blue') {
+            const clickedElement = event ? event.target : null;
+            showWordPopupWithElement(word, translation, clickedElement);
+        }
+        
+        function showWordPopupWithElement(word, translation, element) {
+            // Clear any existing timeout
+            if (popupTimeout) {
+                clearTimeout(popupTimeout);
+                popupTimeout = null;
+            }
+            
+            const popup = document.getElementById('word-popup');
+            document.getElementById('popup-word').textContent = word;
+            document.getElementById('popup-translation').textContent = translation;
+            
+            // Store the clicked element
+            currentWordElement = element;
+            
+            // Update button text based on word color
+            const knownBtn = document.getElementById('popup-known-btn');
+            if (element && element.classList.contains('blue')) {
+                knownBtn.textContent = 'Already known';
+            } else {
+                knownBtn.textContent = 'Got it!';
+            }
+            
+            popup.classList.add('active');
+            
+            // Auto-close after 5 seconds if no action taken
+            popupTimeout = setTimeout(() => {
+                popup.classList.remove('active');
+                currentWordElement = null;
+            }, 5000);
+        }
+        
+        function closeWordPopup() {
+            if (popupTimeout) {
+                clearTimeout(popupTimeout);
+                popupTimeout = null;
+            }
+            document.getElementById('word-popup').classList.remove('active');
+            currentWordElement = null;
+        }
+        
+        function markWordKnown() {
+            if (popupTimeout) {
+                clearTimeout(popupTimeout);
+                popupTimeout = null;
+            }
+            
+            // Change word to gray (known)
+            if (currentWordElement) {
+                currentWordElement.classList.remove('blue', 'yellow');
+                currentWordElement.classList.add('white');
+            }
+            
+            document.getElementById('word-popup').classList.remove('active');
+            currentWordElement = null;
+        }
+        
+        function markWordLearning() {
+            if (popupTimeout) {
+                clearTimeout(popupTimeout);
+                popupTimeout = null;
+            }
+            
+            // Change word to yellow (still learning)
+            if (currentWordElement) {
+                currentWordElement.classList.remove('blue', 'white');
+                currentWordElement.classList.add('yellow');
+            }
+            
+            document.getElementById('word-popup').classList.remove('active');
+            currentWordElement = null;
+        }
+        
+        // Language rotation
+        const languages = ['Spanish', 'French', 'German', 'Italian', 'Russian', 'Portuguese'];
+        let langIndex = 0;
+        
+        setInterval(() => {
+            langIndex = (langIndex + 1) % languages.length;
+            const elem = document.getElementById('rotating-language');
+            if (elem) {
+                elem.textContent = languages[langIndex];
+            }
+        }, 2000);
+        
+        // Click outside to close
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.hamburger') && !e.target.closest('.side-menu')) {
+                document.getElementById('side-menu').classList.remove('active');
+                document.querySelector('.hamburger').classList.remove('active');
+            }
+        });
+        
+        // Drag-to-select phrase functionality
+        let isDragging = false;
+        let selectedWords = new Set();
+        
+        function initPhraseDrag() {
+            const phraseWords = document.querySelectorAll('.phrase-word');
+            
+            phraseWords.forEach(word => {
+                // Mouse events
+                word.addEventListener('mousedown', startDrag);
+                word.addEventListener('mouseenter', continueDrag);
+                word.addEventListener('mouseup', endDrag);
+                
+                // Touch events
+                word.addEventListener('touchstart', startDragTouch, { passive: false });
+                word.addEventListener('touchmove', continueDragTouch, { passive: false });
+                word.addEventListener('touchend', endDrag);
+            });
+            
+            document.addEventListener('mouseup', endDrag);
+        }
+        
+        function startDrag(e) {
+            e.preventDefault();
+            isDragging = true;
+            selectedWords.clear();
+            clearPhraseSelection();
+            selectWord(e.target);
+        }
+        
+        function startDragTouch(e) {
+            e.preventDefault();
+            isDragging = true;
+            selectedWords.clear();
+            clearPhraseSelection();
+            selectWord(e.target);
+        }
+        
+        function continueDrag(e) {
+            if (isDragging && e.target.classList.contains('phrase-word')) {
+                selectWord(e.target);
+            }
+        }
+        
+        function continueDragTouch(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (element && element.classList.contains('phrase-word')) {
+                selectWord(element);
+            }
+        }
+        
+        function selectWord(wordElement) {
+            const index = parseInt(wordElement.dataset.index);
+            selectedWords.add(index);
+            wordElement.classList.add('phrase-selected');
+        }
+        
+        function clearPhraseSelection() {
+            document.querySelectorAll('.phrase-word').forEach(el => {
+                el.classList.remove('phrase-selected');
+            });
+        }
+        
+        function endDrag() {
+            if (isDragging && selectedWords.size === 4) {
+                // All 4 words selected, show phrase popup
+                setTimeout(() => {
+                    document.getElementById('phrase-popup').classList.add('active');
+                }, 200);
+            }
+            isDragging = false;
+        }
+        
+        // Initialize drag functionality when page loads
+        document.addEventListener('DOMContentLoaded', initPhraseDrag);
+        
+        // Also initialize immediately in case DOM is already ready
+        if (document.readyState !== 'loading') {
+            initPhraseDrag();
+        }
+    </script>
+</body>
+</html>
